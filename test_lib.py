@@ -20,8 +20,7 @@ def test_get_allowed_cards():
 
 
 def test_play():
-    return True  # Can set this up when we know how it works
-    player = Player("test")
+    player = Human("test")
     cards = [
         ("h", 2),
         ("h", 10),
@@ -29,24 +28,24 @@ def test_play():
     ]
     hand = [Card(*x) for x in cards]
     player.hand = hand.copy()
+    gamestate = GameState([player])
 
     # make sure right card is played
     with mock.patch("builtins.input", return_value=0):
-        assert player.play("Spades") == hand[0]
+        assert player.play("Spades", gamestate) == hand[0]
 
     # make sure the card is removed
     assert player.hand == hand[1:]
 
     with mock.patch("builtins.input", return_value=0):
-        assert player.play("Diamonds") == hand[2]
+        assert player.play("Diamonds", gamestate) == hand[2]
     assert player.hand == [hand[1]]
 
 
 def test_predict():
-    return True  # Can set this up when we know how it works
-    player = Player("test")
+    player = Human("test")
     gamestate = GameState(players=[player])
 
     with mock.patch("builtins.input", return_value=3):
-        assert player.predict(gamestate) == 3
-        assert player.prediction == 3
+        assert player.predict([1, 2, 3, 5], gamestate) == 3
+        assert player.prediction  == 3

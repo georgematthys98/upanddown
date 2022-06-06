@@ -94,7 +94,7 @@ class Player:
         self.hand = []
         
     @abc.abstractclassmethod
-    def predict(self, gamestate):
+    def predict(self, allowed, gamestate):
         ...
 
 
@@ -176,7 +176,7 @@ class Board:
             else:
                 disallowed_predict = n - sum(predictions.values())
                 allowed_predictions = [p for p in range(0, n+1) if p != disallowed_predict]
-            predictions[player] = player.predict(self.gamestate)
+            predictions[player] = player.predict(allowed_predictions, self.gamestate)
         
         self.gamestate.current_predictions = predictions
             
@@ -216,6 +216,10 @@ class Board:
             won_tricks = (board.gamestate.current_tricks[player])
             guessed_tricks = player.prediction 
             print(f'{player.name} guessed {guessed_tricks} and won {won_tricks}' )
+            if won_tricks == guessed_tricks:
+                self.gamestate.game_score[player.name] += 10 + 2 * won_tricks
+            else:
+                self.gamestate.game_score[player.name] -= 2 * abs(won_tricks  - guessed_tricks)
 
 
 @dataclass
@@ -223,13 +227,13 @@ class GameState:
     current_trump_card: Card
     current_predictions: Dict[Player, int]
     current_tricks: Dict[Player, int]
-    game_score: Dict[Player, int]
+    game_score: Dict[str, int]
 
     def __init__(self, players):            
         self.current_trump_card = None
         self.current_predictions = {}
         self.current_tricks = {player: 0 for player in players}
-        self.game_score = {player: 0 for player in players}
+        self.game_score = {player.name: 0 for player in players}
 
             
 if __name__ == '__main__':
@@ -241,3 +245,4 @@ if __name__ == '__main__':
     board.deal(7)
     board.get_predictions(7)
     board.play_round(7)
+    print({k: v for k, v in board.gamestate.game_score.items()})
