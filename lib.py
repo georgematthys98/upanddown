@@ -1,4 +1,5 @@
 import random
+from xml.dom import NoModificationAllowedErr
 
 suits = ["Hearts", "Spades", "Diamonds", "Clubs"]
 values = list(range(2, 15))
@@ -21,13 +22,11 @@ class Card:
 
     def display(self):
         if self.value in [11, 12, 13, 14]:
-            display_value = {14: "Ace", 11: "Jack", 12: "Queen", 13: "King"}[
-                self.value
-            ]
-            print(f"{display_value} of {self.suit}")
+            display_value = {14: "Ace", 11: "Jack", 12: "Queen", 13: "King"}[self.value]
+            return(f"{display_value} of {self.suit}")
         else:
-            print(f"{self.value} of {self.suit}")
-
+            return(f"{self.value} of {self.suit}")
+            
 
 class Deck:
     def __init__(self):
@@ -76,18 +75,17 @@ class Player:
     def play(self, leading_suit):
         allowed_to_play = self.get_allowed_cards(leading_suit)
         display_value = {14: "Ace", 11: "Jack", 12: "Queen", 13: "King"}
-        display_value.update({i: str(i) for i in range(2, 11)})
-        allowed_to_play_display = [
-            display_value[i.value] + " of " + i.suit for i in allowed_to_play
-        ]
-        choice = input(
-            "Choice cards to play: (input int)\n"
-            + ", ".join(allowed_to_play_display)
-        )
-        choice = int(choice)
+        display_value.update({i:str(i) for i in range(2,11)})
+        allowed_to_play_display = [display_value[i.value] +' of ' + i.suit for i in allowed_to_play]
+        choice = 0
+        # choice = input('Choice cards to play: (input int)\n' +', '.join(allowed_to_play_display))
+        # choice = int(choice)
         played_card = allowed_to_play[choice]
-        self.hand.remove(played_card)  # remove
-        return played_card
+        self.hand.remove(played_card) #remove
+        print(self.name+' played '+played_card.display())
+        return(played_card)
+    
+    
 
     def display_hand(self):
         if len(self.hand) == 0:
@@ -99,15 +97,16 @@ class Player:
 
     def reset_hand(self):
         self.hand = []
+        
+    def predict(self, allowed,trump_suit):
+        # print(f"Possible guesses are {', '.join([str(x) for x in allowed])}")
+        # prediction = int(input("Enter your guess: "))
+        
+        # while prediction not in allowed:
+        #     prediction = int(input("Enter an allowed prediction: "))
+        n_trumps = len([card for card in self.hand if card.suit == trump_suit])
+        self.prediction = n_trumps
 
-    def predict(self, allowed):
-        print(f"Possible guesses are {', '.join([str(x) for x in allowed])}")
-        prediction = int(input("Enter your guess: "))
-
-        while prediction not in allowed:
-            prediction = int(input("Enter an allowed prediction: "))
-
-        self.prediction = prediction
         print(f"{self.name} has made the prediction of {self.prediction}")
         return self.prediction
 
@@ -123,6 +122,10 @@ class Board:
         self.winning_card = None
         self.winning_card_score = None
         self.winning_player = None
+        self.predictions = {name:None for name in players}
+        self.trick_counter = {name:0 for name in players}
+        self.scoreboard = {name:0 for name in players}
+        
 
     def deal(self, cards):
         self.deck.shuffle()
@@ -160,10 +163,10 @@ class Board:
     def calc_card_score(self, card):
         score = 0
         if card.suit == self.trump_suit:
-            score += 2
+            score += 20
         elif card.suit == self.leading_suit:
-            score += 1
-        score += card.value
+            score += 10
+        score += card.value/10
         return score
 
     # def deal_to_table(self):
@@ -181,17 +184,16 @@ class Board:
     def get_predictions(self, n):
         predictions = []
         for i, player in enumerate(self.players):
-            print("Your position this trick", i)
-            print("Trump suit" + self.trump_suit)
-            player.display_hand()
+            # print('Your position this trick',i)
+            # print('Trump suit'+self.trump_suit)
+
             if i != len(self.players) - 1:
                 allowed_predictions = list(range(0, n + 1))
             else:
                 disallowed_predict = n - sum(predictions)
-                allowed_predictions = [
-                    p for p in range(0, n + 1) if p != disallowed_predict
-                ]
-            predictions.append(player.predict(allowed_predictions))
+                allowed_predictions = [p for p in range(0, n+1) if p != disallowed_predict]
+            predictions.append(player.predict(allowed_predictions,self.trump_suit))
+            
 
     def play_trick(self):
         for count, player in enumerate(board.players):
@@ -203,22 +205,42 @@ class Board:
                 self.winning_card = played_card
                 self.winning_card_score = self.calc_card_score(played_card)
                 self.winning_player = player
-                print("You are leading the trick")
+
             else:
                 if self.calc_card_score(played_card) > self.winning_card_score:
                     self.winning_card = played_card
                     self.winning_card_score = self.calc_card_score(played_card)
                     self.winning_player = player
-                    print("You are leading the trick")
-                else:
-                    print("You are not leading the trick")
-            print()
+        print(self.winning_player.name+' won the trick!')
+        winning_player = self.winning_player
+        self.trick_counter[self.winning_player.name] += 1
+        self.leading_suit = None
+        self.winning_card = None
+        self.winning_card_score = None
+        self.winning_player = None
+        return winning_player
+
+    def play_round(self,n_tricks):
+        for trick_n in range(n_tricks):
+            winner = self.play_trick()
+            winning_player_pos = self.players.index(winner)
+            self.players = self.players[winning_player_pos:] + self.players[:winning_player_pos]
+        
+        for player in self.players:
+            won_tricks = (board.trick_counter[player.name])
+            guessed_tricks = player.prediction 
+            print(f'{player.name} guessed {guessed_tricks} and won {won_tricks}' )
+            
+        
+
+  
 
 
-if __name__ == "__main__":
-    board = Board(["Player1", "Player2"])
+            
+            
+if __name__ == '__main__':
+    board = Board(['Player1', 'Player2'])
     board.reset()
     board.deal(7)
     board.get_predictions(7)
-    print()
-    board.play_trick()
+    board.play_round(7)
