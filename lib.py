@@ -1,5 +1,7 @@
 import random
-from xml.dom import NoModificationAllowedErr
+import abc
+
+from players import *
 
 suits = ["Hearts", "Spades", "Diamonds", "Clubs"]
 values = list(range(2, 15))
@@ -48,6 +50,7 @@ class Deck:
             card.display()
 
 
+
 class Player:
     def __init__(self, name):
         self.hand = []
@@ -72,20 +75,10 @@ class Player:
     def draw(self, card):
         self.hand.append(card)
 
+    @abc.abstractclassmethod
     def play(self, leading_suit):
-        allowed_to_play = self.get_allowed_cards(leading_suit)
-        display_value = {14: "Ace", 11: "Jack", 12: "Queen", 13: "King"}
-        display_value.update({i:str(i) for i in range(2,11)})
-        allowed_to_play_display = [display_value[i.value] +' of ' + i.suit for i in allowed_to_play]
-        choice = 0
-        # choice = input('Choice cards to play: (input int)\n' +', '.join(allowed_to_play_display))
-        # choice = int(choice)
-        played_card = allowed_to_play[choice]
-        self.hand.remove(played_card) #remove
-        print(self.name+' played '+played_card.display())
-        return(played_card)
-    
-    
+        ...
+
 
     def display_hand(self):
         if len(self.hand) == 0:
@@ -98,33 +91,25 @@ class Player:
     def reset_hand(self):
         self.hand = []
         
+    @abc.abstractclassmethod
     def predict(self, allowed,trump_suit):
-        # print(f"Possible guesses are {', '.join([str(x) for x in allowed])}")
-        # prediction = int(input("Enter your guess: "))
-        
-        # while prediction not in allowed:
-        #     prediction = int(input("Enter an allowed prediction: "))
-        n_trumps = len([card for card in self.hand if card.suit == trump_suit])
-        self.prediction = n_trumps
-
-        print(f"{self.name} has made the prediction of {self.prediction}")
-        return self.prediction
+        ...
 
 
 class Board:
     def __init__(self, players):
         self.deck = Deck()
-        self.players = [Player(name) for name in players]
+        self.players = players
         self.table = []
-        self.trump_card = None
+        self.trump_card = None 
         self.trump_suit = None
         self.leading_suit = None
         self.winning_card = None
         self.winning_card_score = None
         self.winning_player = None
-        self.predictions = {name:None for name in players}
-        self.trick_counter = {name:0 for name in players}
-        self.scoreboard = {name:0 for name in players}
+        self.predictions = {name:None for name in [player.name for player in players]}
+        self.trick_counter = {name:0 for name in [player.name for player in players]}
+        self.scoreboard = {name:0 for name in [player.name for player in players]}
         
 
     def deal(self, cards):
@@ -192,7 +177,7 @@ class Board:
             else:
                 disallowed_predict = n - sum(predictions)
                 allowed_predictions = [p for p in range(0, n+1) if p != disallowed_predict]
-            predictions.append(player.predict(allowed_predictions,self.trump_suit))
+            predictions.append(player.predict(allowed_predictions, self.trump_suit))
             
 
     def play_trick(self):
@@ -230,16 +215,13 @@ class Board:
             won_tricks = (board.trick_counter[player.name])
             guessed_tricks = player.prediction 
             print(f'{player.name} guessed {guessed_tricks} and won {won_tricks}' )
-            
-        
-
-  
-
-
-            
+    
             
 if __name__ == '__main__':
-    board = Board(['Player1', 'Player2'])
+    board = Board([
+        ShitBot('Player1'), 
+        ShitBot('Player2')]
+    )
     board.reset()
     board.deal(7)
     board.get_predictions(7)
