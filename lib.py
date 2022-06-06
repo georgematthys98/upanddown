@@ -206,6 +206,17 @@ class Board:
         self.winning_player = None
         return winning_player
 
+
+    def calc_round_score(self):
+        for player in self.players:
+            won_tricks = (board.trick_counter[player.name])
+            guessed_tricks = player.prediction 
+            print(f'{player.name} guessed {guessed_tricks} and won {won_tricks}' )
+            score = ((guessed_tricks == won_tricks))*(10+won_tricks)
+            player.score += score
+            print(f'{player.name} gained {score} points' )
+
+
     def play_round(self,n_tricks):
         for trick_n in range(n_tricks):
             winner = self.play_trick()
@@ -243,6 +254,8 @@ if __name__ == '__main__':
     )
     board.reset()
     board.deal(7)
+    print('Deal. trump suit is: '+board.trump_suit)
     board.get_predictions(7)
     board.play_round(7)
     print({k: v for k, v in board.gamestate.game_score.items()})
+    board.calc_round_score()
