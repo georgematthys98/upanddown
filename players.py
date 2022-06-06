@@ -1,7 +1,7 @@
-from lib import *
+from lib import Player
 
 class ShitBot(Player):
-    def play(self, leading_suit):
+    def play(self, leading_suit, gamestate):
         allowed_to_play = self.get_allowed_cards(leading_suit)
         display_value = {14: "Ace", 11: "Jack", 12: "Queen", 13: "King"}
         display_value.update({i:str(i) for i in range(2,11)})
@@ -15,13 +15,13 @@ class ShitBot(Player):
         return(played_card)
 
     
-    def predict(self, allowed, trump_suit):
+    def predict(self, gamestate):
         # print(f"Possible guesses are {', '.join([str(x) for x in allowed])}")
         # prediction = int(input("Enter your guess: "))
         
         # while prediction not in allowed:
         #     prediction = int(input("Enter an allowed prediction: "))
-        n_trumps = len([card for card in self.hand if card.suit == trump_suit])
+        n_trumps = len([card for card in self.hand if card.suit == gamestate.current_trump_card.suit])
         self.prediction = n_trumps
 
         print(f"{self.name} has made the prediction of {self.prediction}")

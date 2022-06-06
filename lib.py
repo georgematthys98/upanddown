@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from typing import Dict
 import random
 import abc
 
@@ -76,7 +78,7 @@ class Player:
         self.hand.append(card)
 
     @abc.abstractclassmethod
-    def play(self, leading_suit):
+    def play(self, leading_suit, gamestate):
         ...
 
 
@@ -92,7 +94,7 @@ class Player:
         self.hand = []
         
     @abc.abstractclassmethod
-    def predict(self, allowed,trump_suit):
+    def predict(self, gamestate):
         ...
 
 
@@ -100,16 +102,13 @@ class Board:
     def __init__(self, players):
         self.deck = Deck()
         self.players = players
+        self.gamestate = GameState(players)
         self.table = []
-        self.trump_card = None 
         self.trump_suit = None
         self.leading_suit = None
         self.winning_card = None
         self.winning_card_score = None
         self.winning_player = None
-        self.predictions = {name:None for name in [player.name for player in players]}
-        self.trick_counter = {name:0 for name in [player.name for player in players]}
-        self.scoreboard = {name:0 for name in [player.name for player in players]}
         
 
     def deal(self, cards):
@@ -118,8 +117,8 @@ class Board:
             for player in self.players:
                 player.draw(self.deck.draw())
 
-        self.trump_card = self.deck.draw()
-        self.trump_suit = self.trump_card.suit
+        self.gamestate.current_trump_card = self.deck.draw()
+        self.trump_suit = self.gamestate.current_trump_card.suit
 
     def add_to_table(self, card):
         self.table.append(card)
@@ -167,7 +166,7 @@ class Board:
         self.players = self.players[1:] + self.players[:1]
 
     def get_predictions(self, n):
-        predictions = []
+        predictions = {}
         for i, player in enumerate(self.players):
             # print('Your position this trick',i)
             # print('Trump suit'+self.trump_suit)
@@ -175,14 +174,16 @@ class Board:
             if i != len(self.players) - 1:
                 allowed_predictions = list(range(0, n + 1))
             else:
-                disallowed_predict = n - sum(predictions)
+                disallowed_predict = n - sum(predictions.values())
                 allowed_predictions = [p for p in range(0, n+1) if p != disallowed_predict]
-            predictions.append(player.predict(allowed_predictions, self.trump_suit))
+            predictions[player] = player.predict(self.gamestate)
+        
+        self.gamestate.current_predictions = predictions
             
 
     def play_trick(self):
         for count, player in enumerate(board.players):
-            played_card = player.play(self.leading_suit)
+            played_card = player.play(self.leading_suit, self.gamestate)
             board.add_to_table(played_card)
 
             if count == 0:
@@ -198,7 +199,7 @@ class Board:
                     self.winning_player = player
         print(self.winning_player.name+' won the trick!')
         winning_player = self.winning_player
-        self.trick_counter[self.winning_player.name] += 1
+        self.gamestate.current_tricks[self.winning_player] += 1
         self.leading_suit = None
         self.winning_card = None
         self.winning_card_score = None
@@ -212,10 +213,24 @@ class Board:
             self.players = self.players[winning_player_pos:] + self.players[:winning_player_pos]
         
         for player in self.players:
-            won_tricks = (board.trick_counter[player.name])
+            won_tricks = (board.gamestate.current_tricks[player])
             guessed_tricks = player.prediction 
             print(f'{player.name} guessed {guessed_tricks} and won {won_tricks}' )
-    
+
+
+@dataclass
+class GameState:
+    current_trump_card: Card
+    current_predictions: Dict[Player, int]
+    current_tricks: Dict[Player, int]
+    game_score: Dict[Player, int]
+
+    def __init__(self, players):            
+        self.current_trump_card = None
+        self.current_predictions = {}
+        self.current_tricks = {player: 0 for player in players}
+        self.game_score = {player: 0 for player in players}
+
             
 if __name__ == '__main__':
     board = Board([
