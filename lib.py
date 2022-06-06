@@ -144,10 +144,10 @@ class Board:
     def calc_card_score(self,card):
         score = 0
         if card.suit == self.trump_suit:
-            score += 2
+            score += 20
         elif card.suit == self.leading_suit:
-            score += 1
-        score += card.value
+            score += 10
+        score += card.value/10
         return score
     # def deal_to_table(self):
     #     card = self.deck.draw()
