@@ -26,11 +26,13 @@ class Card:
 
     def display(self):
         if self.value in [11, 12, 13, 14]:
-            display_value = {14: "Ace", 11: "Jack", 12: "Queen", 13: "King"}[self.value]
-            return(f"{display_value} of {self.suit}")
+            display_value = {14: "Ace", 11: "Jack", 12: "Queen", 13: "King"}[
+                self.value
+            ]
+            return f"{display_value} of {self.suit}"
         else:
-            return(f"{self.value} of {self.suit}")
-            
+            return f"{self.value} of {self.suit}"
+
 
 class Deck:
     def __init__(self):
@@ -50,7 +52,6 @@ class Deck:
     def display(self):
         for card in self.cards:
             card.display()
-
 
 
 class Player:
@@ -81,7 +82,6 @@ class Player:
     def play(self, leading_suit, gamestate):
         ...
 
-
     def display_hand(self):
         if len(self.hand) == 0:
             print(f"{self.name} has no cards")
@@ -92,7 +92,7 @@ class Player:
 
     def reset_hand(self):
         self.hand = []
-        
+
     @abc.abstractclassmethod
     def predict(self, allowed, gamestate):
         ...
@@ -109,7 +109,6 @@ class Board:
         self.winning_card = None
         self.winning_card_score = None
         self.winning_player = None
-        
 
     def deal(self, cards):
         self.deck.shuffle()
@@ -150,7 +149,7 @@ class Board:
             score += 20
         elif card.suit == self.leading_suit:
             score += 10
-        score += card.value/10
+        score += card.value / 10
         return score
 
     # def deal_to_table(self):
@@ -175,11 +174,14 @@ class Board:
                 allowed_predictions = list(range(0, n + 1))
             else:
                 disallowed_predict = n - sum(predictions.values())
-                allowed_predictions = [p for p in range(0, n+1) if p != disallowed_predict]
-            predictions[player] = player.predict(allowed_predictions, self.gamestate)
-        
+                allowed_predictions = [
+                    p for p in range(0, n + 1) if p != disallowed_predict
+                ]
+            predictions[player] = player.predict(
+                allowed_predictions, self.gamestate
+            )
+
         self.gamestate.current_predictions = predictions
-            
 
     def play_trick(self):
         for count, player in enumerate(board.players):
@@ -197,7 +199,7 @@ class Board:
                     self.winning_card = played_card
                     self.winning_card_score = self.calc_card_score(played_card)
                     self.winning_player = player
-        print(self.winning_player.name+' won the trick!')
+        print(self.winning_player.name + " won the trick!")
         winning_player = self.winning_player
         self.gamestate.current_tricks[self.winning_player] += 1
         self.leading_suit = None
@@ -206,31 +208,27 @@ class Board:
         self.winning_player = None
         return winning_player
 
-
-    def calc_round_score(self):
-        for player in self.players:
-            won_tricks = (board.trick_counter[player.name])
-            guessed_tricks = player.prediction 
-            print(f'{player.name} guessed {guessed_tricks} and won {won_tricks}' )
-            score = ((guessed_tricks == won_tricks))*(10+won_tricks)
-            player.score += score
-            print(f'{player.name} gained {score} points' )
-
-
-    def play_round(self,n_tricks):
+    def play_round(self, n_tricks):
         for trick_n in range(n_tricks):
             winner = self.play_trick()
             winning_player_pos = self.players.index(winner)
-            self.players = self.players[winning_player_pos:] + self.players[:winning_player_pos]
-        
+            self.players = (
+                self.players[winning_player_pos:]
+                + self.players[:winning_player_pos]
+            )
+
         for player in self.players:
-            won_tricks = (board.gamestate.current_tricks[player])
-            guessed_tricks = player.prediction 
-            print(f'{player.name} guessed {guessed_tricks} and won {won_tricks}' )
+            won_tricks = self.gamestate.current_tricks[player]
+            guessed_tricks = player.prediction
+            print(
+                f"{player.name} guessed {guessed_tricks} and won {won_tricks}"
+            )
             if won_tricks == guessed_tricks:
                 self.gamestate.game_score[player.name] += 10 + 2 * won_tricks
             else:
-                self.gamestate.game_score[player.name] -= 2 * abs(won_tricks  - guessed_tricks)
+                self.gamestate.game_score[player.name] -= 2 * abs(
+                    won_tricks - guessed_tricks
+                )
 
 
 @dataclass
@@ -240,22 +238,18 @@ class GameState:
     current_tricks: Dict[Player, int]
     game_score: Dict[str, int]
 
-    def __init__(self, players):            
+    def __init__(self, players):
         self.current_trump_card = None
         self.current_predictions = {}
         self.current_tricks = {player: 0 for player in players}
         self.game_score = {player.name: 0 for player in players}
 
-            
-if __name__ == '__main__':
-    board = Board([
-        ShitBot('Player1'), 
-        ShitBot('Player2')]
-    )
+
+if __name__ == "__main__":
+    board = Board([ShitBot("Player1"), ShitBot("Player2")])
     board.reset()
     board.deal(7)
-    print('Deal. trump suit is: '+board.trump_suit)
+    print("Deal. trump suit is: " + board.trump_suit)
     board.get_predictions(7)
     board.play_round(7)
     print({k: v for k, v in board.gamestate.game_score.items()})
-    board.calc_round_score()

@@ -48,4 +48,4 @@ def test_predict():
 
     with mock.patch("builtins.input", return_value=3):
         assert player.predict([1, 2, 3, 5], gamestate) == 3
-        assert player.prediction  == 3
+        assert player.prediction == 3
