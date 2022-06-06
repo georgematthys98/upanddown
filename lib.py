@@ -151,10 +151,6 @@ class Board:
         score += card.value / 10
         return score
 
-    # def deal_to_table(self):
-    #     card = self.deck.draw()
-    #     self.table.insert(0, card)
-
     def reset(self):
         self.deck = Deck()
         for player in self.players:
@@ -166,8 +162,6 @@ class Board:
     def get_predictions(self, n):
         predictions = {}
         for i, player in enumerate(self.players):
-            # print('Your position this trick',i)
-            # print('Trump suit'+self.trump_suit)
 
             if i != len(self.players) - 1:
                 allowed_predictions = list(range(0, n + 1))
