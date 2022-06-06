@@ -51,7 +51,7 @@ class Deck:
 
     def display(self):
         for card in self.cards:
-            card.display()
+            print(card.display())
 
 
 class Player:
@@ -87,8 +87,7 @@ class Player:
             print(f"{self.name} has no cards")
         else:
             print(f"{self.name} has {len(self.hand)} cards:")
-            for card in self.hand:
-                card.display()
+            print(", ".join([card.display() for card in self.hand]))
 
     def reset_hand(self):
         self.hand = []
@@ -246,7 +245,7 @@ class GameState:
 
 
 if __name__ == "__main__":
-    board = Board([ShitBot("Player1"), ShitBot("Player2")])
+    board = Board([Human("Player1"), ShitBot("Player2")])
     board.reset()
     board.deal(7)
     print("Deal. trump suit is: " + board.trump_suit)

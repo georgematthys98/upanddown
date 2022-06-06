@@ -57,6 +57,7 @@ class Human(Player):
     def predict(self, allowed, gamestate):
 
         print(f"Possible guesses are {', '.join([str(x) for x in allowed])}")
+        self.display_hand()
         prediction = int(input("Enter your guess: "))
 
         while prediction not in allowed:
