@@ -33,6 +33,24 @@ class Card:
         else:
             return f"{self.value} of {self.suit}"
 
+    def get_ascii(self):
+        display_value_dic = {14: "A ", 11: "J ", 12: "Q ", 13: "K "}
+        display_value_dic.update({i:str(i)+' ' for i in range(2,11)})
+        display_value_dic.update({10:'10'})
+        display_suit_dic = {'Spades':'\u2660','Hearts':'\u2665','Diamonds':'\u2666','Clubs':'\u2663'}
+        card_template = """
+ ┌─────────┐
+ │{}       │
+ │         │
+ │         │
+ │    {}    │
+ │         │
+ │         │
+ │       {}│
+ └─────────┘"""
+        display_value = display_value_dic[self.value]
+        display_suit = display_suit_dic[self.suit]
+        return card_template.format(display_value,display_suit,display_value)
 
 class Deck:
     def __init__(self):
@@ -59,6 +77,15 @@ class Player:
         self.hand = []
         self.score = 0
         self.name = name
+    
+    def display_hand_ascii(self):
+        if len(self.hand) == 0:
+            print(f"{self.name} has no cards")
+        else:
+            asci_list = [card.get_ascii() for card in self.hand]
+            asci_list = [i.split('\n') for i in asci_list]
+            for i in zip(*asci_list):
+                print(''.join(i))
 
     def get_allowed_cards(self, leading_suit):
         if leading_suit:
@@ -89,6 +116,11 @@ class Player:
             print(f"{self.name} has {len(self.hand)} cards:")
             print(", ".join([card.display() for card in self.hand]))
 
+
+
+        
+    
+    
     def reset_hand(self):
         self.hand = []
 
