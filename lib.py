@@ -53,10 +53,14 @@ class Card:
         return card_template.format(display_value,display_suit,display_value)
 
 class Deck:
-    def __init__(self):
-        self.cards = [Card(suit, value) for suit in suits for value in values]
+    def __init__(self,suit = None):
+        if not suit:
+            self.cards = [Card(suit, value) for suit in suits for value in values]
+        else:
+            self.cards = [Card(suit,value) for suit in [suit] for value in values]
 
     def shuffle(self):
+        random.seed(10)
         random.shuffle(self.cards)
 
     def draw(self):
@@ -70,7 +74,15 @@ class Deck:
     def display(self):
         for card in self.cards:
             print(card.display())
+    
+    def remove(self,card):
+        cards = self.cards
+        remove_suit = card.suit
+        remove_value = card.value
+        new_cards = [card for card in cards if not (card.suit == remove_suit and card.value == remove_value)]
+        self.cards = new_cards
 
+    
 
 class Player:
     def __init__(self, name):
@@ -262,18 +274,20 @@ class GameState:
     current_predictions: Dict[Player, int]
     current_tricks: Dict[Player, int]
     game_score: Dict[str, int]
+    n_players: int
 
     def __init__(self, players):
         self.current_trump_card = None
         self.current_predictions = {}
         self.current_tricks = {player: 0 for player in players}
         self.game_score = {player.name: 0 for player in players}
-
+        self.n_players = len(players)
 
 if __name__ == "__main__":
-    board = Board([Human("Player1"), ShitBot("Player2")])
+    board = Board([ShitBot("shitbot"), ProbBot("probbot")])
     board.reset()
     board.deal(7)
+    print('dealt')
     print("Deal. trump suit is: " + board.trump_suit)
     board.get_predictions(7)
     board.play_round(7)
