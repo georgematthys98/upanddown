@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Type
 import random
 import abc
 
@@ -35,9 +35,14 @@ class Card:
 
     def get_ascii(self):
         display_value_dic = {14: "A ", 11: "J ", 12: "Q ", 13: "K "}
-        display_value_dic.update({i:str(i)+' ' for i in range(2,11)})
-        display_value_dic.update({10:'10'})
-        display_suit_dic = {'Spades':'\u2660','Hearts':'\u2665','Diamonds':'\u2666','Clubs':'\u2663'}
+        display_value_dic.update({i: str(i) + " " for i in range(2, 11)})
+        display_value_dic.update({10: "10"})
+        display_suit_dic = {
+            "Spades": "\u2660",
+            "Hearts": "\u2665",
+            "Diamonds": "\u2666",
+            "Clubs": "\u2663",
+        }
         card_template = """
  ┌─────────┐
  │{}       │
@@ -50,17 +55,21 @@ class Card:
  └─────────┘"""
         display_value = display_value_dic[self.value]
         display_suit = display_suit_dic[self.suit]
-        return card_template.format(display_value,display_suit,display_value)
+        return card_template.format(display_value, display_suit, display_value)
+
 
 class Deck:
-    def __init__(self,suit = None):
+    def __init__(self, suit=None):
         if not suit:
-            self.cards = [Card(suit, value) for suit in suits for value in values]
+            self.cards = [
+                Card(suit, value) for suit in suits for value in values
+            ]
         else:
-            self.cards = [Card(suit,value) for suit in [suit] for value in values]
+            self.cards = [
+                Card(suit, value) for suit in [suit] for value in values
+            ]
 
     def shuffle(self):
-        random.seed(10)
         random.shuffle(self.cards)
 
     def draw(self):
@@ -74,30 +83,33 @@ class Deck:
     def display(self):
         for card in self.cards:
             print(card.display())
-    
-    def remove(self,card):
+
+    def remove(self, card):
         cards = self.cards
         remove_suit = card.suit
         remove_value = card.value
-        new_cards = [card for card in cards if not (card.suit == remove_suit and card.value == remove_value)]
+        new_cards = [
+            card
+            for card in cards
+            if not (card.suit == remove_suit and card.value == remove_value)
+        ]
         self.cards = new_cards
 
-    
 
 class Player:
     def __init__(self, name):
         self.hand = []
         self.score = 0
         self.name = name
-    
+
     def display_hand_ascii(self):
         if len(self.hand) == 0:
             print(f"{self.name} has no cards")
         else:
             asci_list = [card.get_ascii() for card in self.hand]
-            asci_list = [i.split('\n') for i in asci_list]
+            asci_list = [i.split("\n") for i in asci_list]
             for i in zip(*asci_list):
-                print(''.join(i))
+                print("".join(i))
 
     def get_allowed_cards(self, leading_suit):
         if leading_suit:
@@ -128,11 +140,6 @@ class Player:
             print(f"{self.name} has {len(self.hand)} cards:")
             print(", ".join([card.display() for card in self.hand]))
 
-
-
-        
-    
-    
     def reset_hand(self):
         self.hand = []
 
@@ -159,6 +166,8 @@ class Board:
             for player in self.players:
                 player.draw(self.deck.draw())
 
+        self.gamestate.reset()
+        self.gamestate.set_round(cards)
         self.gamestate.current_trump_card = self.deck.draw()
         self.trump_suit = self.gamestate.current_trump_card.suit
 
@@ -188,7 +197,7 @@ class Board:
 
     def calc_card_score(self, card):
         score = 0
-        if card.suit == self.trump_suit:
+        if card.suit == self.gamestate.current_trump_card.suit:
             score += 20
         elif card.suit == self.leading_suit:
             score += 10
@@ -199,6 +208,7 @@ class Board:
         self.deck = Deck()
         for player in self.players:
             player.reset_hand()
+        self.gamestate.reset()
 
     def rotate_players(self):
         self.players = self.players[1:] + self.players[:1]
@@ -275,6 +285,7 @@ class GameState:
     current_tricks: Dict[Player, int]
     game_score: Dict[str, int]
     n_players: int
+    current_round: int
 
     def __init__(self, players):
         self.current_trump_card = None
@@ -283,11 +294,19 @@ class GameState:
         self.game_score = {player.name: 0 for player in players}
         self.n_players = len(players)
 
+    def reset(self):
+        self.current_predictions = {}
+        self.current_trump_card = None
+
+    def set_round(self, round: int):
+        self.current_round = round
+
+
 if __name__ == "__main__":
-    board = Board([ShitBot("shitbot"), ProbBot("probbot")])
+    board = Board([ShitBot("shitbot"), BetaBot("probbot")])
     board.reset()
     board.deal(7)
-    print('dealt')
+    print("dealt")
     print("Deal. trump suit is: " + board.trump_suit)
     board.get_predictions(7)
     board.play_round(7)
