@@ -117,25 +117,27 @@ class ProbBot(Player):
 
 class BetaBot(Player):
     def play(self, leading_suit, gamestate):
-        pass
+        allowed_to_play = self.get_allowed_cards(leading_suit)
+        played_card = allowed_to_play[0]
+        self.hand.remove(played_card)  # remove
+        return played_card
 
     def predict(self, allowed, gamestate):
 
-        print("Predict starting")
-        print(gamestate.current_round)
         hand_points = points_in_hand(
             self.hand, gamestate.n_players, gamestate.current_trump_card.suit
         )
-        print(hand_points)
         hand_percentile = points_to_percentile(
             hand_points,
             gamestate.n_players,
             gamestate.current_round,
             gamestate.current_trump_card.suit,
         )
-        print(hand_percentile)
         expected_tricks = percentile_to_expected(
             hand_percentile, gamestate.n_players, gamestate.current_round
         )
 
-        return round(expected_tricks)
+        prediction = round(expected_tricks)
+        self.prediction = prediction
+
+        return prediction

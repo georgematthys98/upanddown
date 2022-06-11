@@ -303,7 +303,7 @@ class GameState:
 
 
 if __name__ == "__main__":
-    board = Board([ShitBot("shitbot"), BetaBot("probbot")])
+    board = Board([ShitBot("shitbot"), BetaBot("betabot")])
     board.reset()
     board.deal(7)
     print("dealt")
