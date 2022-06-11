@@ -1,7 +1,59 @@
-from lib import Player
-from probBotFunctions import prob_of_winning_trick
+# from probBotFunctions import prob_of_winning_trick
 from statistics import mean
 from betabot import *
+import abc
+
+
+class Player:
+    def __init__(self, name):
+        self.hand = []
+        self.score = 0
+        self.name = name
+
+    def display_hand_ascii(self):
+        if len(self.hand) == 0:
+            print(f"{self.name} has no cards")
+        else:
+            asci_list = [card.get_ascii() for card in self.hand]
+            asci_list = [i.split("\n") for i in asci_list]
+            for i in zip(*asci_list):
+                print("".join(i))
+
+    def get_allowed_cards(self, leading_suit):
+        if leading_suit:
+            suit_list = [card.suit for card in self.hand]
+            req_to_play_leading = leading_suit in suit_list
+            if req_to_play_leading:
+                allowed_list = [
+                    card for card in self.hand if card.suit == leading_suit
+                ]
+            else:
+                allowed_list = self.hand
+        else:
+            allowed_list = self.hand
+
+        return allowed_list
+
+    def draw(self, card):
+        self.hand.append(card)
+
+    @abc.abstractclassmethod
+    def play(self, leading_suit, gamestate):
+        ...
+
+    def display_hand(self):
+        if len(self.hand) == 0:
+            print(f"{self.name} has no cards")
+        else:
+            print(f"{self.name} has {len(self.hand)} cards:")
+            print(", ".join([card.display() for card in self.hand]))
+
+    def reset_hand(self):
+        self.hand = []
+
+    @abc.abstractclassmethod
+    def predict(self, allowed, gamestate):
+        ...
 
 
 class ShitBot(Player):
@@ -15,7 +67,6 @@ class ShitBot(Player):
         choice = 0
         played_card = allowed_to_play[choice]
         self.hand.remove(played_card)  # remove
-        print(self.name + " played " + played_card.display())
         return played_card
 
     def predict(self, allowed, gamestate):
@@ -27,8 +78,6 @@ class ShitBot(Player):
             ]
         )
         self.prediction = n_trumps
-
-        print(f"{self.name} has made the prediction of {self.prediction}")
         return self.prediction
 
 
@@ -46,7 +95,6 @@ class Human(Player):
         choice = int(choice)
         played_card = allowed_to_play[choice]
         self.hand.remove(played_card)  # remove
-        print(self.name + " played " + played_card.display())
         return played_card
 
     def predict(self, allowed, gamestate):
@@ -59,7 +107,6 @@ class Human(Player):
             prediction = int(input("Enter an allowed prediction: "))
 
         self.prediction = prediction
-        print(f"{self.name} has made the prediction of {self.prediction}")
         return self.prediction
 
 
@@ -74,7 +121,6 @@ class ProbBot(Player):
         choice = 0
         played_card = allowed_to_play[choice]
         self.hand.remove(played_card)  # remove
-        print(self.name + " played " + played_card.display())
         return played_card
 
     def predict(self, allowed, gamestate):
@@ -83,17 +129,11 @@ class ProbBot(Player):
         excluded = self.hand
         played = []
         n_players = gamestate.n_players
-        # p_leading = 1/n_players
-        # p_not_leading = 1-p_leading
-        print(self.name, "guessing")
-        (self.display_hand_ascii())
-        print("trump", trump_suit)
         prediction = 0
         for card in self.hand:
             prob_winning_list = []
             print(card.display())
             for leading_suit in ["Hearts", "Spades", "Clubs", "Diamonds"]:
-                print()
                 prob_winning_trick = prob_of_winning_trick(
                     card,
                     trump_suit,
@@ -104,14 +144,10 @@ class ProbBot(Player):
                     n_players,
                 )
                 prob_winning_list.append(prob_winning_trick)
-                print("leading suit", leading_suit, prob_winning_trick)
 
             card_guess = mean(prob_winning_list)
             prediction += card_guess
-            print(card_guess)
-            print("\n")
         self.prediction = round(prediction)
-        print(f"{self.name} has made the prediction of {self.prediction}")
         return self.prediction
 
 
@@ -127,11 +163,13 @@ class BetaBot(Player):
         hand_points = points_in_hand(
             self.hand, gamestate.n_players, gamestate.current_trump_card.suit
         )
+
         hand_percentile = points_to_percentile(
             hand_points,
             gamestate.n_players,
             gamestate.current_round,
             gamestate.current_trump_card.suit,
+            gamestate.training,
         )
         expected_tricks = percentile_to_expected(
             hand_percentile, gamestate.n_players, gamestate.current_round

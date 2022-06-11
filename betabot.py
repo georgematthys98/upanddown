@@ -1,8 +1,11 @@
 from typing import Dict, List
-from lib import GameState, Card, Deck
+from lib import Deck
 from scipy.stats import beta, percentileofscore
 import numpy as np
 import matplotlib.pyplot as plt
+
+import constants
+import pyperclip
 
 DISTRIBUTION_ITERATIONS = 100000
 PARAMETER_ALPHA = 2.5
@@ -10,7 +13,7 @@ TRUMP_SCALING = 3.0
 TRUMP_CONST = 0.0
 
 
-def points_in_hand(hand: List[Card], n_players: int, trump_suit) -> float:
+def points_in_hand(hand: list, n_players: int, trump_suit) -> float:
 
     return sum(
         [
@@ -26,14 +29,11 @@ def points_in_hand(hand: List[Card], n_players: int, trump_suit) -> float:
 
 
 def points_to_percentile(
-    points: float,
-    n_players: int,
-    n_cards: int,
-    trump_suit,
+    points: float, n_players: int, n_cards: int, trump_suit, training
 ) -> float:
 
     distribution = generate_points_distribution(
-        points_in_hand, n_players, n_cards, trump_suit
+        points_in_hand, n_players, n_cards, trump_suit, training
     )
     percentile = percentileofscore(distribution, points)
 
@@ -72,18 +72,21 @@ def beta_parameter_a() -> float:
 
 
 def generate_points_distribution(
-    points_in_hand_function, n_players, n_cards, trump_suit
+    points_in_hand_function, n_players, n_cards, trump_suit, training
 ) -> List[float]:
     deck = Deck()
 
-    scores = []
+    if training:
+        scores = constants.scores_7_cards
+    else:
+        scores = []
 
-    for _ in range(DISTRIBUTION_ITERATIONS):
-        deck.shuffle()
-        hand = deck.cards[:n_cards]
-        scores.append(points_in_hand_function(hand, n_players, trump_suit))
+        for _ in range(DISTRIBUTION_ITERATIONS):
+            deck.shuffle()
+            hand = deck.cards[:n_cards]
+            scores.append(points_in_hand_function(hand, n_players, trump_suit))
 
-    # plt.hist(scores, bins=np.arange(0, 180, 1))
-    # plt.savefig("something.png")
+        # plt.hist(scores, bins=np.arange(0, 180, 1))
+        # plt.savefig("something.png")
 
     return scores

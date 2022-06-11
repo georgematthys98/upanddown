@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, Type
 import random
-import abc
 
 from players import *
 
@@ -96,58 +95,6 @@ class Deck:
         self.cards = new_cards
 
 
-class Player:
-    def __init__(self, name):
-        self.hand = []
-        self.score = 0
-        self.name = name
-
-    def display_hand_ascii(self):
-        if len(self.hand) == 0:
-            print(f"{self.name} has no cards")
-        else:
-            asci_list = [card.get_ascii() for card in self.hand]
-            asci_list = [i.split("\n") for i in asci_list]
-            for i in zip(*asci_list):
-                print("".join(i))
-
-    def get_allowed_cards(self, leading_suit):
-        if leading_suit:
-            suit_list = [card.suit for card in self.hand]
-            req_to_play_leading = leading_suit in suit_list
-            if req_to_play_leading:
-                allowed_list = [
-                    card for card in self.hand if card.suit == leading_suit
-                ]
-            else:
-                allowed_list = self.hand
-        else:
-            allowed_list = self.hand
-
-        return allowed_list
-
-    def draw(self, card):
-        self.hand.append(card)
-
-    @abc.abstractclassmethod
-    def play(self, leading_suit, gamestate):
-        ...
-
-    def display_hand(self):
-        if len(self.hand) == 0:
-            print(f"{self.name} has no cards")
-        else:
-            print(f"{self.name} has {len(self.hand)} cards:")
-            print(", ".join([card.display() for card in self.hand]))
-
-    def reset_hand(self):
-        self.hand = []
-
-    @abc.abstractclassmethod
-    def predict(self, allowed, gamestate):
-        ...
-
-
 class Board:
     def __init__(self, players):
         self.deck = Deck()
@@ -170,6 +117,19 @@ class Board:
         self.gamestate.set_round(cards)
         self.gamestate.current_trump_card = self.deck.draw()
         self.trump_suit = self.gamestate.current_trump_card.suit
+
+    def train(self, n_tricks: int, iterations: int):
+        self.reset()
+
+        self.gamestate.training = True
+
+        for _ in range(iterations):
+            self.reset()
+            self.deal(n_tricks)
+            self.get_predictions(n_tricks)
+            self.play_round(n_tricks)
+
+        print({k: v for k, v in self.gamestate.game_score.items()})
 
     def add_to_table(self, card):
         self.table.append(card)
@@ -231,9 +191,9 @@ class Board:
         self.gamestate.current_predictions = predictions
 
     def play_trick(self):
-        for count, player in enumerate(board.players):
+        for count, player in enumerate(self.players):
             played_card = player.play(self.leading_suit, self.gamestate)
-            board.add_to_table(played_card)
+            self.add_to_table(played_card)
 
             if count == 0:
                 self.leading_suit = played_card.suit
@@ -246,7 +206,6 @@ class Board:
                     self.winning_card = played_card
                     self.winning_card_score = self.calc_card_score(played_card)
                     self.winning_player = player
-        print(self.winning_player.name + " won the trick!")
         winning_player = self.winning_player
         self.gamestate.current_tricks[self.winning_player] += 1
         self.leading_suit = None
@@ -264,6 +223,7 @@ class Board:
                 + self.players[:winning_player_pos]
             )
 
+        print(f"Total tricks: {n_tricks}")
         for player in self.players:
             won_tricks = self.gamestate.current_tricks[player]
             guessed_tricks = player.prediction
@@ -277,15 +237,32 @@ class Board:
                     won_tricks - guessed_tricks
                 )
 
+    def go_up_and_down(self):
+
+        for i in range(1, 8):
+            self.reset()
+            self.deal(i)
+            self.get_predictions(i)
+            self.play_round(i)
+
+        for i in reversed(range(1, 7)):
+            self.reset()
+            self.deal(i)
+            self.get_predictions(i)
+            self.play_round(i)
+
+        print({k: v for k, v in self.gamestate.game_score.items()})
+
 
 @dataclass
 class GameState:
     current_trump_card: Card
-    current_predictions: Dict[Player, int]
-    current_tricks: Dict[Player, int]
+    current_predictions: dict
+    current_tricks: dict
     game_score: Dict[str, int]
     n_players: int
     current_round: int
+    training: bool
 
     def __init__(self, players):
         self.current_trump_card = None
@@ -293,9 +270,11 @@ class GameState:
         self.current_tricks = {player: 0 for player in players}
         self.game_score = {player.name: 0 for player in players}
         self.n_players = len(players)
+        self.training = False
 
     def reset(self):
         self.current_predictions = {}
+        self.current_tricks = {k: 0 for k in self.current_tricks.keys()}
         self.current_trump_card = None
 
     def set_round(self, round: int):
@@ -303,11 +282,9 @@ class GameState:
 
 
 if __name__ == "__main__":
-    board = Board([ShitBot("shitbot"), BetaBot("betabot")])
+    board = Board(
+        [*[ShitBot(f"shitbot{i}") for i in range(1, 5)], BetaBot("betabot")]
+    )
     board.reset()
-    board.deal(7)
-    print("dealt")
-    print("Deal. trump suit is: " + board.trump_suit)
-    board.get_predictions(7)
-    board.play_round(7)
-    print({k: v for k, v in board.gamestate.game_score.items()})
+    board.train(7, 1000)
+    pass
