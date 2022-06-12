@@ -283,8 +283,8 @@ class GameState:
 
 if __name__ == "__main__":
     board = Board(
-        [*[ShitBot(f"shitbot{i}") for i in range(1, 5)], BetaBot("betabot")]
+        [*[BetaBot(f"betabot{i}") for i in range(1, 5)], BetaBot("betabot5")]
     )
     board.reset()
-    board.train(7, 1000)
+    board.train(7, 10000)
     pass
