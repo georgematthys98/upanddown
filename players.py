@@ -1,4 +1,4 @@
-# from probBotFunctions import prob_of_winning_trick
+from probBotFunctions import prob_of_winning_trick
 from statistics import mean
 from betabot import *
 import abc
